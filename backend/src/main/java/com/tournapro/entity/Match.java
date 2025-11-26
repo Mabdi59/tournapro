@@ -22,11 +22,11 @@ public class Match {
     private Division division;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team1_id", nullable = false)
+    @JoinColumn(name = "team1_id")
     private Team team1;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "team2_id", nullable = false)
+    @JoinColumn(name = "team2_id")
     private Team team2;
 
     private Integer team1Score;

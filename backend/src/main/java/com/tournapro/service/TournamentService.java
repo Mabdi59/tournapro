@@ -109,6 +109,9 @@ public class TournamentService {
     private void generateRoundRobinSchedule(Division division, List<Team> teams) {
         List<Match> matches = new ArrayList<>();
         int round = 1;
+        int matchesPerRound = teams.size() / 2;
+        if (matchesPerRound == 0) matchesPerRound = 1;
+        int matchesInCurrentRound = 0;
 
         for (int i = 0; i < teams.size(); i++) {
             for (int j = i + 1; j < teams.size(); j++) {
@@ -120,8 +123,10 @@ public class TournamentService {
                 match.setStatus(Match.MatchStatus.SCHEDULED);
                 matches.add(match);
                 
-                if (matches.size() % (teams.size() / 2) == 0) {
+                matchesInCurrentRound++;
+                if (matchesInCurrentRound >= matchesPerRound) {
                     round++;
+                    matchesInCurrentRound = 0;
                 }
             }
         }

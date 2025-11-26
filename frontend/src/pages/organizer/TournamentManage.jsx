@@ -98,7 +98,7 @@ function TournamentManage() {
   const handleDeleteTeam = async (teamId) => {
     if (window.confirm('Are you sure you want to delete this team?')) {
       try {
-        await teamAPI.delete(teamId);
+        await teamAPI.delete(id, teamId);
         loadTeams();
       } catch (err) {
         setError('Failed to delete team');
@@ -109,7 +109,7 @@ function TournamentManage() {
   const handleDeleteDivision = async (divisionId) => {
     if (window.confirm('Are you sure you want to delete this division?')) {
       try {
-        await divisionAPI.delete(divisionId);
+        await divisionAPI.delete(id, divisionId);
         loadDivisions();
       } catch (err) {
         setError('Failed to delete division');

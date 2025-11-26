@@ -42,19 +42,19 @@ export const tournamentAPI = {
 // Team API
 export const teamAPI = {
   getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/teams`),
-  getById: (id) => api.get(`/tournaments/0/teams/${id}`),
+  getById: (tournamentId, id) => api.get(`/tournaments/${tournamentId}/teams/${id}`),
   create: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/teams`, data),
-  update: (id, data) => api.put(`/tournaments/0/teams/${id}`, data),
-  delete: (id) => api.delete(`/tournaments/0/teams/${id}`),
+  update: (tournamentId, id, data) => api.put(`/tournaments/${tournamentId}/teams/${id}`, data),
+  delete: (tournamentId, id) => api.delete(`/tournaments/${tournamentId}/teams/${id}`),
 };
 
 // Division API
 export const divisionAPI = {
   getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/divisions`),
-  getById: (id) => api.get(`/tournaments/0/divisions/${id}`),
+  getById: (tournamentId, id) => api.get(`/tournaments/${tournamentId}/divisions/${id}`),
   create: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/divisions`, data),
-  update: (id, data) => api.put(`/tournaments/0/divisions/${id}`, data),
-  delete: (id) => api.delete(`/tournaments/0/divisions/${id}`),
+  update: (tournamentId, id, data) => api.put(`/tournaments/${tournamentId}/divisions/${id}`, data),
+  delete: (tournamentId, id) => api.delete(`/tournaments/${tournamentId}/divisions/${id}`),
 };
 
 // Match API
