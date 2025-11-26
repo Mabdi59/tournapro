@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: tournapro-db
+    environment:
+      POSTGRES_DB: tournapro
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tournapro-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tournapro-backend
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/tournapro
+      DATABASE_USERNAME: postgres
+      DATABASE_PASSWORD: postgres
+      JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - tournapro-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tournapro-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - tournapro-network
+
+volumes:
+  postgres_data:
+
+networks:
+  tournapro-network:
+    driver: bridge

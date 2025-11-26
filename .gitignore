@@ -45,3 +45,7 @@ frontend/.env.local
 # OS
 .DS_Store
 Thumbs.db
+
+# Docker
+*.env
+docker-compose.override.yml
