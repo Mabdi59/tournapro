@@ -1,0 +1,333 @@
+/* Player Form Modal */
+.player-form-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.player-form-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.player-form-content h3 {
+  margin-top: 0;
+  margin-bottom: 24px;
+  color: #2563eb;
+  font-size: 24px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+/* Player List */
+.player-list {
+  margin-top: 20px;
+}
+
+.player-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.player-list-header h3 {
+  margin: 0;
+  color: #1e293b;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 2px dashed #cbd5e1;
+}
+
+.empty-state p {
+  color: #64748b;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+/* Players Grid */
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.player-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.player-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.player-card-header {
+  text-align: center;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.jersey-number {
+  display: inline-block;
+  background: #2563eb;
+  color: white;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  line-height: 48px;
+  font-size: 20px;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.player-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 8px 0;
+}
+
+.player-position {
+  font-size: 14px;
+  color: #64748b;
+  background: #f1f5f9;
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  margin-top: 4px;
+}
+
+/* Player Stats */
+.player-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.stat-item {
+  text-align: center;
+  padding: 8px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  display: block;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* Player Cards (Yellow/Red) */
+.player-cards {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.card-badge.yellow {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.card-badge.red {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Player Contact */
+.player-contact {
+  margin-bottom: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.contact-item {
+  font-size: 13px;
+  color: #475569;
+  margin: 4px 0;
+}
+
+/* Player Actions */
+.player-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.player-actions .btn {
+  flex: 1;
+}
+
+.btn-sm {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+/* Player Stats Component */
+.player-stats-dashboard {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 20px;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.stat-card .value {
+  font-size: 36px;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Top Scorers List */
+.top-scorers-list {
+  margin-top: 20px;
+}
+
+.scorer-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.scorer-rank {
+  font-size: 24px;
+  font-weight: 700;
+  color: #cbd5e1;
+  width: 40px;
+  text-align: center;
+}
+
+.scorer-rank.top {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.scorer-info {
+  flex: 1;
+  margin: 0 16px;
+}
+
+.scorer-name {
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.scorer-team {
+  font-size: 14px;
+  color: #64748b;
+}
+
+.scorer-goals {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .players-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .player-form-content {
+    padding: 20px;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .player-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

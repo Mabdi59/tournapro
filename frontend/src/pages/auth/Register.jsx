@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
@@ -21,11 +22,21 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    const loadingToast = toast.loading('Creating your account...');
+    
     try {
       await register(formData);
+      toast.success('Account created successfully! Welcome to TournaPro!', {
+        id: loadingToast,
+      });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      const errorMessage = err.response?.data?.message || 'Registration failed';
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        id: loadingToast,
+      });
     }
   };
 

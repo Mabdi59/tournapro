@@ -13,41 +13,41 @@ function PublicTournamentView() {
   const [activeTab, setActiveTab] = useState('teams');
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        const [tournamentRes, teamsRes, divisionsRes] = await Promise.all([
+          publicAPI.getTournament(id),
+          publicAPI.getTeams(id),
+          publicAPI.getDivisions(id),
+        ]);
+        setTournament(tournamentRes.data);
+        setTeams(teamsRes.data);
+        setDivisions(divisionsRes.data);
+        if (divisionsRes.data.length > 0) {
+          setSelectedDivision(divisionsRes.data[0].id);
+        }
+      } catch {
+        console.error('Failed to load tournament data');
+      }
+    };
+
     loadData();
   }, [id]);
 
   useEffect(() => {
+    const loadMatches = async (divisionId) => {
+      try {
+        const response = await publicAPI.getMatches(divisionId);
+        setMatches(response.data);
+      } catch {
+        console.error('Failed to load matches');
+      }
+    };
+
     if (selectedDivision) {
       loadMatches(selectedDivision);
     }
   }, [selectedDivision]);
-
-  const loadData = async () => {
-    try {
-      const [tournamentRes, teamsRes, divisionsRes] = await Promise.all([
-        publicAPI.getTournament(id),
-        publicAPI.getTeams(id),
-        publicAPI.getDivisions(id),
-      ]);
-      setTournament(tournamentRes.data);
-      setTeams(teamsRes.data);
-      setDivisions(divisionsRes.data);
-      if (divisionsRes.data.length > 0) {
-        setSelectedDivision(divisionsRes.data[0].id);
-      }
-    } catch (err) {
-      console.error('Failed to load tournament data', err);
-    }
-  };
-
-  const loadMatches = async (divisionId) => {
-    try {
-      const response = await publicAPI.getMatches(divisionId);
-      setMatches(response.data);
-    } catch (err) {
-      console.error('Failed to load matches', err);
-    }
-  };
 
   if (!tournament) return <div className="container">Loading...</div>;
 

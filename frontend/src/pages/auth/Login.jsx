@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 import './Auth.css';
 
@@ -19,11 +20,21 @@ function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    const loadingToast = toast.loading('Signing you in...');
+    
     try {
       await login(formData);
+      toast.success('Welcome back!', {
+        id: loadingToast,
+      });
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed');
+      const errorMessage = err.response?.data?.message || 'Login failed';
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        id: loadingToast,
+      });
     }
   };
 

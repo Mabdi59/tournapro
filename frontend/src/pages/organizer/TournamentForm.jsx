@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { tournamentAPI } from '../../services/api';
 import './Organizer.css';
 
@@ -18,27 +19,29 @@ function TournamentForm() {
   const isEdit = Boolean(id);
 
   useEffect(() => {
+    const loadTournament = async () => {
+      try {
+        const response = await tournamentAPI.getById(id);
+        const tournament = response.data;
+        setFormData({
+          name: tournament.name,
+          description: tournament.description || '',
+          startDate: tournament.startDate.substring(0, 16),
+          endDate: tournament.endDate ? tournament.endDate.substring(0, 16) : '',
+          location: tournament.location,
+          format: tournament.format,
+        });
+      } catch {
+        const errorMessage = 'Failed to load tournament';
+        setError(errorMessage);
+        toast.error(errorMessage);
+      }
+    };
+    
     if (isEdit) {
       loadTournament();
     }
-  }, [id]);
-
-  const loadTournament = async () => {
-    try {
-      const response = await tournamentAPI.getById(id);
-      const tournament = response.data;
-      setFormData({
-        name: tournament.name,
-        description: tournament.description || '',
-        startDate: tournament.startDate.substring(0, 16),
-        endDate: tournament.endDate ? tournament.endDate.substring(0, 16) : '',
-        location: tournament.location,
-        format: tournament.format,
-      });
-    } catch (err) {
-      setError('Failed to load tournament');
-    }
-  };
+  }, [id, isEdit]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -47,6 +50,9 @@ function TournamentForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    const loadingToast = toast.loading(isEdit ? 'Updating tournament...' : 'Creating tournament...');
+    
     try {
       const data = {
         ...formData,
@@ -55,12 +61,16 @@ function TournamentForm() {
       };
       if (isEdit) {
         await tournamentAPI.update(id, data);
+        toast.success('Tournament updated successfully!', { id: loadingToast });
       } else {
         await tournamentAPI.create(data);
+        toast.success('Tournament created successfully!', { id: loadingToast });
       }
       navigate('/dashboard');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save tournament');
+      const errorMessage = err.response?.data?.message || 'Failed to save tournament';
+      setError(errorMessage);
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 

@@ -64,6 +64,22 @@ export const matchAPI = {
   getById: (tournamentId, id) => api.get(`/tournaments/${tournamentId}/matches/${id}`),
   updateResult: (tournamentId, id, data) => 
     api.put(`/tournaments/${tournamentId}/matches/${id}/result`, data),
+  updateSchedule: (tournamentId, id, data) =>
+    api.put(`/tournaments/${tournamentId}/matches/${id}/schedule`, data),
+};
+
+// Player API
+export const playerAPI = {
+  getByTeam: (teamId) => api.get(`/teams/${teamId}/players`),
+  getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/players`),
+  getById: (id) => api.get(`/players/${id}`),
+  create: (teamId, data) => api.post(`/teams/${teamId}/players`, data),
+  update: (id, data) => api.put(`/players/${id}`, data),
+  delete: (id) => api.delete(`/players/${id}`),
+  getTopScorers: (tournamentId, limit = 10) => 
+    api.get(`/tournaments/${tournamentId}/top-scorers?limit=${limit}`),
+  updateStats: (id, stats) => 
+    api.patch(`/players/${id}/stats`, null, { params: stats }),
 };
 
 // Public API

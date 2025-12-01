@@ -1,55 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import {
   tournamentAPI,
   teamAPI,
   divisionAPI,
   matchAPI,
+  playerAPI,
 } from '../../services/api';
+import { useWebSocket } from '../../contexts/WebSocketContext';
+import PlayerList from '../../components/player/PlayerList';
+import PlayerStats from '../../components/player/PlayerStats';
+import MatchScheduleForm from '../../components/match/MatchScheduleForm';
+import TournamentBracket from '../../components/bracket/TournamentBracket';
+import MatchCalendar from '../../components/calendar/MatchCalendar';
+import ConnectionStatus from '../../components/websocket/ConnectionStatus';
 import './Organizer.css';
+import '../../components/match/Match.css';
+import '../../components/calendar/Calendar.css';
 
 function TournamentManage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { subscribe } = useWebSocket();
   const [tournament, setTournament] = useState(null);
   const [teams, setTeams] = useState([]);
   const [divisions, setDivisions] = useState([]);
   const [selectedDivision, setSelectedDivision] = useState(null);
   const [matches, setMatches] = useState([]);
+  const [players, setPlayers] = useState([]);
+  const [selectedTeam, setSelectedTeam] = useState(null);
   const [activeTab, setActiveTab] = useState('teams');
   const [showTeamForm, setShowTeamForm] = useState(false);
   const [showDivisionForm, setShowDivisionForm] = useState(false);
+  const [showScheduleForm, setShowScheduleForm] = useState(false);
+  const [schedulingMatch, setSchedulingMatch] = useState(null);
   const [teamForm, setTeamForm] = useState({ name: '', description: '', divisionId: '' });
   const [divisionForm, setDivisionForm] = useState({ name: '', description: '' });
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    loadTournament();
-    loadTeams();
-    loadDivisions();
-  }, [id]);
-
-  useEffect(() => {
-    if (selectedDivision) {
-      loadMatches(selectedDivision);
-    }
-  }, [selectedDivision]);
-
-  const loadTournament = async () => {
-    try {
-      const response = await tournamentAPI.getById(id);
-      setTournament(response.data);
-    } catch (err) {
-      setError('Failed to load tournament');
-    }
-  };
 
   const loadTeams = async () => {
     try {
       const response = await teamAPI.getByTournament(id);
       setTeams(response.data);
-    } catch (err) {
-      console.error('Failed to load teams', err);
+    } catch {
+      console.error('Failed to load teams');
     }
   };
 
@@ -57,8 +52,8 @@ function TournamentManage() {
     try {
       const response = await divisionAPI.getByTournament(id);
       setDivisions(response.data);
-    } catch (err) {
-      console.error('Failed to load divisions', err);
+    } catch {
+      console.error('Failed to load divisions');
     }
   };
 
@@ -66,93 +61,376 @@ function TournamentManage() {
     try {
       const response = await matchAPI.getByDivision(id, divisionId);
       setMatches(response.data);
-    } catch (err) {
-      console.error('Failed to load matches', err);
+    } catch {
+      console.error('Failed to load matches');
     }
   };
 
+  useEffect(() => {
+    const loadTournament = async () => {
+      try {
+        const response = await tournamentAPI.getById(id);
+        setTournament(response.data);
+      } catch {
+        setError('Failed to load tournament');
+      }
+    };
+
+    loadTournament();
+    loadTeams();
+    loadDivisions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
+    if (selectedDivision) {
+      loadMatches(selectedDivision);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDivision]);
+
+  // WebSocket subscriptions for real-time updates
+  useEffect(() => {
+    const unsubscribeMatch = subscribe('matchUpdate', (payload) => {
+      if (payload.tournamentId === parseInt(id)) {
+        setMatches((prev) =>
+          prev.map((match) =>
+            match.id === payload.match.id ? { ...match, ...payload.match } : match
+          )
+        );
+        toast.success('Match updated in real-time!');
+      }
+    });
+
+    const unsubscribeTournament = subscribe('tournamentUpdate', (payload) => {
+      if (payload.tournament.id === parseInt(id)) {
+        setTournament((prev) => ({ ...prev, ...payload.tournament }));
+        toast.success('Tournament updated!');
+      }
+    });
+
+    const unsubscribeTeam = subscribe('teamUpdate', (payload) => {
+      if (payload.tournamentId === parseInt(id)) {
+        if (payload.action === 'created') {
+          setTeams((prev) => [...prev, payload.team]);
+        } else if (payload.action === 'updated') {
+          setTeams((prev) =>
+            prev.map((team) => (team.id === payload.team.id ? payload.team : team))
+          );
+        } else if (payload.action === 'deleted') {
+          setTeams((prev) => prev.filter((team) => team.id !== payload.teamId));
+        }
+      }
+    });
+
+    const unsubscribePlayer = subscribe('playerUpdate', (payload) => {
+      if (selectedTeam && payload.teamId === selectedTeam) {
+        reloadPlayers();
+      }
+    });
+
+    const unsubscribeRegistration = subscribe('registrationUpdate', (payload) => {
+      if (payload.tournamentId === parseInt(id)) {
+        toast.success(`New registration: ${payload.teamName}`);
+        loadTeams();
+      }
+    });
+
+    return () => {
+      unsubscribeMatch();
+      unsubscribeTournament();
+      unsubscribeTeam();
+      unsubscribePlayer();
+      unsubscribeRegistration();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, selectedTeam]);
+
+  const reloadPlayers = async () => {
+    if (selectedTeam) {
+      try {
+        const response = await playerAPI.getByTeam(selectedTeam);
+        setPlayers(response.data);
+      } catch {
+        console.error('Failed to load players');
+      }
+    }
+  };
+
+  useEffect(() => {
+    const loadPlayers = async (teamId) => {
+      try {
+        const response = await playerAPI.getByTeam(teamId);
+        setPlayers(response.data);
+      } catch {
+        console.error('Failed to load players');
+      }
+    };
+
+    if (selectedTeam) {
+      loadPlayers(selectedTeam);
+    }
+  }, [selectedTeam]);
+
   const handleCreateTeam = async (e) => {
     e.preventDefault();
+    const loadingToast = toast.loading('Creating team...');
     try {
       await teamAPI.create(id, teamForm);
       setTeamForm({ name: '', description: '', divisionId: '' });
       setShowTeamForm(false);
       loadTeams();
-    } catch (err) {
-      setError('Failed to create team');
+      toast.success('Team created successfully!', { id: loadingToast });
+    } catch {
+      const errorMessage = 'Failed to create team';
+      setError(errorMessage);
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 
   const handleCreateDivision = async (e) => {
     e.preventDefault();
+    const loadingToast = toast.loading('Creating division...');
     try {
       await divisionAPI.create(id, divisionForm);
       setDivisionForm({ name: '', description: '' });
       setShowDivisionForm(false);
       loadDivisions();
-    } catch (err) {
-      setError('Failed to create division');
+      toast.success('Division created successfully!', { id: loadingToast });
+    } catch {
+      const errorMessage = 'Failed to create division';
+      setError(errorMessage);
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 
   const handleDeleteTeam = async (teamId) => {
-    if (window.confirm('Are you sure you want to delete this team?')) {
-      try {
-        await teamAPI.delete(id, teamId);
-        loadTeams();
-      } catch (err) {
-        setError('Failed to delete team');
-      }
-    }
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <span>Are you sure you want to delete this team?</span>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const loadingToast = toast.loading('Deleting team...');
+              try {
+                await teamAPI.delete(id, teamId);
+                loadTeams();
+                toast.success('Team deleted successfully!', { id: loadingToast });
+              } catch {
+                const errorMessage = 'Failed to delete team';
+                setError(errorMessage);
+                toast.error(errorMessage, { id: loadingToast });
+              }
+            }}
+            className="btn btn-danger"
+            style={{ padding: '6px 12px', fontSize: '14px' }}
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '14px' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleDeleteDivision = async (divisionId) => {
-    if (window.confirm('Are you sure you want to delete this division?')) {
-      try {
-        await divisionAPI.delete(id, divisionId);
-        loadDivisions();
-      } catch (err) {
-        setError('Failed to delete division');
-      }
-    }
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <span>Are you sure you want to delete this division?</span>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const loadingToast = toast.loading('Deleting division...');
+              try {
+                await divisionAPI.delete(id, divisionId);
+                loadDivisions();
+                toast.success('Division deleted successfully!', { id: loadingToast });
+              } catch {
+                const errorMessage = 'Failed to delete division';
+                setError(errorMessage);
+                toast.error(errorMessage, { id: loadingToast });
+              }
+            }}
+            className="btn btn-danger"
+            style={{ padding: '6px 12px', fontSize: '14px' }}
+          >
+            Delete
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="btn btn-secondary"
+            style={{ padding: '6px 12px', fontSize: '14px' }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   const handleGenerateSchedule = async (divisionId) => {
+    const loadingToast = toast.loading('Generating schedule...');
     try {
       await tournamentAPI.generateSchedule(id, divisionId);
       loadMatches(divisionId);
-      alert('Schedule generated successfully!');
-    } catch (err) {
-      setError('Failed to generate schedule');
+      toast.success('Schedule generated successfully!', { id: loadingToast });
+    } catch {
+      const errorMessage = 'Failed to generate schedule';
+      setError(errorMessage);
+      toast.error(errorMessage, { id: loadingToast });
     }
   };
 
   const handleUpdateMatchResult = async (matchId, team1Score, team2Score) => {
+    const loadingToast = toast.loading('Updating match result...');
     try {
       await matchAPI.updateResult(id, matchId, { team1Score, team2Score });
       loadMatches(selectedDivision);
       loadTeams();
-    } catch (err) {
-      setError('Failed to update match result');
+      toast.success('Match result updated successfully!', { id: loadingToast });
+    } catch {
+      const errorMessage = 'Failed to update match result';
+      setError(errorMessage);
+      toast.error(errorMessage, { id: loadingToast });
     }
+  };
+
+  const handleScheduleMatch = (match) => {
+    setSchedulingMatch(match);
+    setShowScheduleForm(true);
+  };
+
+  const handleScheduleSave = async () => {
+    await loadMatches(selectedDivision);
+    setShowScheduleForm(false);
+    setSchedulingMatch(null);
+  };
+
+  const handleStatusChange = async (newStatus) => {
+    toast((t) => (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <span>Are you sure you want to change the tournament status to {newStatus}?</span>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+          <button
+            onClick={async () => {
+              toast.dismiss(t.id);
+              const loadingToast = toast.loading('Updating tournament status...');
+              try {
+                await tournamentAPI.update(id, { ...tournament, status: newStatus });
+                setTournament({ ...tournament, status: newStatus });
+                toast.success('Tournament status updated successfully!', { id: loadingToast });
+              } catch {
+                const errorMessage = 'Failed to update tournament status';
+                setError(errorMessage);
+                toast.error(errorMessage, { id: loadingToast });
+              }
+            }}
+            className="btn btn-primary"
+          >
+            Yes
+          </button>
+          <button
+            onClick={() => toast.dismiss(t.id)}
+            className="btn btn-secondary"
+          >
+            No
+          </button>
+        </div>
+      </div>
+    ), { duration: Infinity });
   };
 
   if (!tournament) return <div className="container">Loading...</div>;
 
+  const getStatusBadgeClass = (status) => {
+    switch (status) {
+      case 'UPCOMING':
+        return 'status-upcoming';
+      case 'IN_PROGRESS':
+        return 'status-in-progress';
+      case 'COMPLETED':
+        return 'status-completed';
+      case 'CANCELLED':
+        return 'status-cancelled';
+      default:
+        return '';
+    }
+  };
+
+  const getStatusDisplay = (status) => {
+    switch (status) {
+      case 'UPCOMING':
+        return '📅 Upcoming';
+      case 'IN_PROGRESS':
+        return '🔥 In Progress';
+      case 'COMPLETED':
+        return '✅ Completed';
+      case 'CANCELLED':
+        return '❌ Cancelled';
+      default:
+        return status;
+    }
+  };
+
   return (
     <div className="container">
       <div className="tournament-details">
-        <h1>{tournament.name}</h1>
+        <div className="tournament-header">
+          <div>
+            <h1>{tournament.name}</h1>
+            <span className={`status-badge ${getStatusBadgeClass(tournament.status)}`}>
+              {getStatusDisplay(tournament.status)}
+            </span>
+          </div>
+          <ConnectionStatus />
+        </div>
         <p>{tournament.description}</p>
         <p>📍 {tournament.location}</p>
         <p>📅 {new Date(tournament.startDate).toLocaleDateString()}</p>
         <p>Format: {tournament.format}</p>
-        <button
-          onClick={() => navigate(`/tournaments/edit/${id}`)}
-          className="btn btn-primary"
-        >
-          Edit Tournament
-        </button>
+        <div className="tournament-actions">
+          <button
+            onClick={() => navigate(`/tournaments/edit/${id}`)}
+            className="btn btn-primary"
+          >
+            Edit Tournament
+          </button>
+          
+          {tournament.status === 'UPCOMING' && (
+            <button
+              onClick={() => handleStatusChange('IN_PROGRESS')}
+              className="btn btn-success"
+            >
+              🚀 Start Tournament
+            </button>
+          )}
+          
+          {tournament.status === 'IN_PROGRESS' && (
+            <button
+              onClick={() => handleStatusChange('COMPLETED')}
+              className="btn btn-success"
+            >
+              ✅ Mark as Complete
+            </button>
+          )}
+          
+          {(tournament.status === 'UPCOMING' || tournament.status === 'IN_PROGRESS') && (
+            <button
+              onClick={() => handleStatusChange('CANCELLED')}
+              className="btn btn-danger"
+            >
+              ❌ Cancel Tournament
+            </button>
+          )}
+        </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
@@ -165,6 +443,12 @@ function TournamentManage() {
           Teams ({teams.length})
         </button>
         <button
+          className={`tab ${activeTab === 'players' ? 'active' : ''}`}
+          onClick={() => setActiveTab('players')}
+        >
+          Players
+        </button>
+        <button
           className={`tab ${activeTab === 'divisions' ? 'active' : ''}`}
           onClick={() => setActiveTab('divisions')}
         >
@@ -175,6 +459,18 @@ function TournamentManage() {
           onClick={() => setActiveTab('matches')}
         >
           Matches
+        </button>
+        <button
+          className={`tab ${activeTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('stats')}
+        >
+          Statistics
+        </button>
+        <button
+          className={`tab ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          Calendar
         </button>
       </div>
 
@@ -326,6 +622,39 @@ function TournamentManage() {
         </div>
       )}
 
+      {activeTab === 'players' && (
+        <div className="players-section">
+          <div className="form-group">
+            <label>Select Team</label>
+            <select
+              value={selectedTeam || ''}
+              onChange={(e) => setSelectedTeam(e.target.value)}
+            >
+              <option value="">Choose a team</option>
+              {teams.map((team) => (
+                <option key={team.id} value={team.id}>
+                  {team.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedTeam && (
+            <PlayerList 
+              teamId={selectedTeam} 
+              players={players}
+              onUpdate={reloadPlayers}
+            />
+          )}
+
+          {!selectedTeam && teams.length > 0 && (
+            <div className="empty-state">
+              <p>Select a team to manage its players.</p>
+            </div>
+          )}
+        </div>
+      )}
+
       {activeTab === 'matches' && (
         <div className="matches-list">
           <div className="form-group">
@@ -345,20 +674,55 @@ function TournamentManage() {
 
           {selectedDivision && (
             <>
-              {tournament.format === 'SINGLE_ELIMINATION' ? (
-                <BracketView matches={matches} onUpdateResult={handleUpdateMatchResult} />
+              {tournament.format === 'SINGLE_ELIMINATION' || tournament.format === 'DOUBLE_ELIMINATION' ? (
+                <TournamentBracket 
+                  matches={matches} 
+                  onUpdateResult={handleUpdateMatchResult}
+                  onScheduleMatch={handleScheduleMatch}
+                />
               ) : (
-                <MatchList matches={matches} onUpdateResult={handleUpdateMatchResult} />
+                <MatchList 
+                  matches={matches} 
+                  onUpdateResult={handleUpdateMatchResult}
+                  onScheduleMatch={handleScheduleMatch}
+                />
               )}
             </>
           )}
         </div>
       )}
+
+      {activeTab === 'stats' && (
+        <div className="stats-section">
+          <PlayerStats tournamentId={id} />
+        </div>
+      )}
+
+      {activeTab === 'calendar' && (
+        <div className="calendar-section">
+          <MatchCalendar
+            matches={matches}
+            onMatchClick={handleScheduleMatch}
+          />
+        </div>
+      )}
+
+      {showScheduleForm && schedulingMatch && (
+        <MatchScheduleForm
+          tournamentId={id}
+          match={schedulingMatch}
+          onClose={() => {
+            setShowScheduleForm(false);
+            setSchedulingMatch(null);
+          }}
+          onSave={handleScheduleSave}
+        />
+      )}
     </div>
   );
 }
 
-function MatchList({ matches, onUpdateResult }) {
+function MatchList({ matches, onUpdateResult, onScheduleMatch }) {
   const [editingMatch, setEditingMatch] = useState(null);
   const [scores, setScores] = useState({ team1Score: '', team2Score: '' });
 
@@ -375,13 +739,54 @@ function MatchList({ matches, onUpdateResult }) {
     setEditingMatch(null);
   };
 
+  const formatDateTime = (dateTime) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
   return (
     <div>
       {matches.map((match) => (
-        <div key={match.id} className="match-item">
-          <div className="match-teams">
-            Round {match.round}: {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
+        <div 
+          key={match.id} 
+          className={`match-item ${match.scheduledTime ? 'scheduled' : ''}`}
+        >
+          <div className="match-header">
+            <div className="match-teams">
+              <strong>Round {match.round}:</strong> {match.team1?.name || 'TBD'} vs {match.team2?.name || 'TBD'}
+            </div>
+            <div>
+              {match.scheduledTime ? (
+                <span className="schedule-badge">
+                  📅 Scheduled
+                </span>
+              ) : (
+                <span className="schedule-badge unscheduled-badge">
+                  ⏳ Not Scheduled
+                </span>
+              )}
+            </div>
           </div>
+
+          {match.scheduledTime && (
+            <div className="match-schedule-info">
+              <div className="schedule-time">
+                🕐 {formatDateTime(match.scheduledTime)}
+              </div>
+              {match.venue && (
+                <div className="schedule-venue">
+                  📍 {match.venue}
+                </div>
+              )}
+            </div>
+          )}
+
           {editingMatch === match.id ? (
             <div>
               <input
@@ -411,69 +816,31 @@ function MatchList({ matches, onUpdateResult }) {
                   ? `${match.team1Score} - ${match.team2Score}`
                   : '-'}
               </div>
-              <div>
+              <div className="match-actions">
                 <span className={`match-status ${match.status.toLowerCase()}`}>
                   {match.status}
                 </span>
                 {match.team1 && match.team2 && (
-                  <button
-                    onClick={() => handleEdit(match)}
-                    className="btn btn-primary"
-                    style={{ marginLeft: '10px' }}
-                  >
-                    {match.status === 'COMPLETED' ? 'Edit' : 'Enter Result'}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleEdit(match)}
+                      className="btn btn-primary"
+                    >
+                      {match.status === 'COMPLETED' ? 'Edit' : 'Enter Result'}
+                    </button>
+                    <button
+                      onClick={() => onScheduleMatch(match)}
+                      className="btn-schedule"
+                    >
+                      {match.scheduledTime ? 'Reschedule' : 'Schedule'}
+                    </button>
+                  </>
                 )}
               </div>
             </>
           )}
         </div>
       ))}
-    </div>
-  );
-}
-
-function BracketView({ matches, onUpdateResult }) {
-  const rounds = {};
-  matches.forEach((match) => {
-    if (!rounds[match.round]) rounds[match.round] = [];
-    rounds[match.round].push(match);
-  });
-
-  return (
-    <div className="bracket">
-      {Object.keys(rounds)
-        .sort((a, b) => a - b)
-        .map((round) => (
-          <div key={round} className="bracket-round">
-            <h4>Round {round}</h4>
-            {rounds[round].map((match) => (
-              <div key={match.id} className="bracket-match">
-                <div className={`bracket-team ${match.winner?.id === match.team1?.id ? 'winner' : ''}`}>
-                  {match.team1?.name || 'TBD'} {match.team1Score !== null ? `(${match.team1Score})` : ''}
-                </div>
-                <div className={`bracket-team ${match.winner?.id === match.team2?.id ? 'winner' : ''}`}>
-                  {match.team2?.name || 'TBD'} {match.team2Score !== null ? `(${match.team2Score})` : ''}
-                </div>
-                {match.team1 && match.team2 && match.status !== 'COMPLETED' && (
-                  <button
-                    onClick={() => {
-                      const team1Score = prompt('Enter score for ' + match.team1.name);
-                      const team2Score = prompt('Enter score for ' + match.team2.name);
-                      if (team1Score !== null && team2Score !== null) {
-                        onUpdateResult(match.id, parseInt(team1Score), parseInt(team2Score));
-                      }
-                    }}
-                    className="btn btn-primary"
-                    style={{ marginTop: '10px', width: '100%' }}
-                  >
-                    Enter Result
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        ))}
     </div>
   );
 }

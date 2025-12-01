@@ -1,0 +1,266 @@
+/* Match Schedule Modal */
+.match-schedule-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.match-schedule-content {
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.match-schedule-content h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  color: #2563eb;
+  font-size: 24px;
+}
+
+/* Match Info Display */
+.match-info {
+  background: #f8fafc;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+.match-teams {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.team-name {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 16px;
+}
+
+.vs {
+  color: #64748b;
+  font-size: 14px;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.match-round {
+  color: #64748b;
+  font-size: 14px;
+}
+
+/* Form Inputs */
+.datetime-input,
+.venue-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.datetime-input:focus,
+.venue-input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.form-help {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+/* Match Display with Schedule */
+.match-item {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #e2e8f0;
+}
+
+.match-item.scheduled {
+  border-left-color: #10b981;
+}
+
+.match-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.match-schedule-info {
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+.schedule-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #166534;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.schedule-venue {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #15803d;
+}
+
+.schedule-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #10b981;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.unscheduled-badge {
+  background: #94a3b8;
+}
+
+/* Match Actions */
+.match-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btn-schedule {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-schedule:hover {
+  background: #059669;
+}
+
+/* Calendar View Styles */
+.calendar-view {
+  margin-top: 20px;
+}
+
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+}
+
+.calendar-day {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 100px;
+  background: white;
+}
+
+.calendar-day-header {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.calendar-day-number {
+  font-size: 18px;
+  color: #1e293b;
+  margin-bottom: 8px;
+}
+
+.calendar-match {
+  background: #eff6ff;
+  border-left: 3px solid #2563eb;
+  padding: 4px 8px;
+  margin-bottom: 4px;
+  font-size: 11px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.calendar-match:hover {
+  background: #dbeafe;
+}
+
+.calendar-match-time {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.calendar-match-teams {
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .match-schedule-content {
+    padding: 20px;
+  }
+
+  .match-teams {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .vs {
+    margin: 4px 0;
+  }
+
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .match-actions {
+    flex-direction: column;
+  }
+
+  .match-actions button {
+    width: 100%;
+  }
+}
