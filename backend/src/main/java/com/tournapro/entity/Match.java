@@ -1,5 +1,6 @@
 package com.tournapro.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,6 +8,7 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "matches")
 @Data
@@ -47,6 +49,37 @@ public class Match {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "winner_id")
     private Team winner;
+
+    @Column(length = 500)
+    private String venue;
+
+    @Column(name = "bracket_type", length = 20)
+    private String bracketType;
+
+    // Explicit getters/setters for the new fields (Lombok @Data is present, but explicit methods are OK)
+    public String getVenue() {
+        return venue;
+    }
+
+    public void setVenue(String venue) {
+        this.venue = venue;
+    }
+
+    public String getBracketType() {
+        return bracketType;
+    }
+
+    public void setBracketType(String bracketType) {
+        this.bracketType = bracketType;
+    }
+
+    public LocalDateTime getScheduledTime() {
+        return scheduledTime;
+    }
+
+    public void setScheduledTime(LocalDateTime scheduledTime) {
+        this.scheduledTime = scheduledTime;
+    }
 
     public enum MatchStatus {
         SCHEDULED, IN_PROGRESS, COMPLETED, CANCELLED

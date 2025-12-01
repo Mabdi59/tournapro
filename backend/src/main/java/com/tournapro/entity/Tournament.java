@@ -1,5 +1,7 @@
 package com.tournapro.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -9,12 +11,14 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "tournaments")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Tournament {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -34,11 +38,11 @@ public class Tournament {
     private String location;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private TournamentStatus status = TournamentStatus.UPCOMING;
+    @Column(nullable = false, length = 32)
+    private TournamentStatus status;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 32)
     private TournamentFormat format;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -46,15 +50,25 @@ public class Tournament {
     private User organizer;
 
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Division> divisions = new ArrayList<>();
 
     @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonIgnore
     private List<Team> teams = new ArrayList<>();
 
-    @Column(nullable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = TournamentStatus.UPCOMING;
+        }
+    }
 
     @PreUpdate
     protected void onUpdate() {

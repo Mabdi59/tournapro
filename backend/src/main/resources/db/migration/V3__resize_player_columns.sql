@@ -1,0 +1,15 @@
+-- Flyway migration: enlarge player text columns to match entity definitions
+-- Adjusts name, email, position and phone_number column sizes to avoid "value too long" errors
+
+ALTER TABLE players
+    ALTER COLUMN name TYPE varchar(100);
+
+ALTER TABLE players
+    ALTER COLUMN email TYPE varchar(100);
+
+ALTER TABLE players
+    ALTER COLUMN position TYPE varchar(50);
+
+ALTER TABLE players
+    ALTER COLUMN phone_number TYPE varchar(20);
+

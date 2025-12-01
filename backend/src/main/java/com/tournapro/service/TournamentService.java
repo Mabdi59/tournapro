@@ -30,11 +30,15 @@ public class TournamentService {
     private final TeamRepository teamRepository;
     private final MatchRepository matchRepository;
 
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
     @Transactional
     public Tournament createTournament(TournamentRequest request) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User organizer = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User organizer = getCurrentUser();
 
         Tournament tournament = new Tournament();
         tournament.setName(request.getName());
@@ -44,30 +48,32 @@ public class TournamentService {
         tournament.setLocation(request.getLocation());
         tournament.setFormat(request.getFormat());
         tournament.setOrganizer(organizer);
+        tournament.setStatus(Tournament.TournamentStatus.UPCOMING);
 
         return tournamentRepository.save(tournament);
     }
 
+    @Transactional(readOnly = true)
     public List<Tournament> getAllTournaments() {
         return tournamentRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Tournament getTournamentById(Long id) {
         return tournamentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Tournament not found"));
     }
 
+    @Transactional(readOnly = true)
     public List<Tournament> getMyTournaments() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User organizer = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User organizer = getCurrentUser();
         return tournamentRepository.findByOrganizer(organizer);
     }
 
     @Transactional
     public Tournament updateTournament(Long id, TournamentRequest request) {
         Tournament tournament = getTournamentById(id);
-        
+
         tournament.setName(request.getName());
         tournament.setDescription(request.getDescription());
         tournament.setStartDate(request.getStartDate());
@@ -80,7 +86,8 @@ public class TournamentService {
 
     @Transactional
     public void deleteTournament(Long id) {
-        tournamentRepository.deleteById(id);
+        Tournament tournament = getTournamentById(id); // ensures existence
+        tournamentRepository.delete(tournament);
     }
 
     @Transactional
@@ -89,8 +96,14 @@ public class TournamentService {
         Division division = divisionRepository.findById(divisionId)
                 .orElseThrow(() -> new RuntimeException("Division not found"));
 
+        // Safety: make sure this division belongs to this tournament
+        if (division.getTournament() == null ||
+                !division.getTournament().getId().equals(tournament.getId())) {
+            throw new RuntimeException("Division does not belong to this tournament");
+        }
+
         List<Team> teams = teamRepository.findByDivision(division);
-        
+
         if (teams.size() < 2) {
             throw new RuntimeException("Need at least 2 teams to generate schedule");
         }
@@ -103,6 +116,9 @@ public class TournamentService {
             generateRoundRobinSchedule(division, teams);
         } else if (tournament.getFormat() == Tournament.TournamentFormat.SINGLE_ELIMINATION) {
             generateSingleEliminationSchedule(division, teams);
+        } else if (tournament.getFormat() == Tournament.TournamentFormat.DOUBLE_ELIMINATION) {
+            // Not implemented yet: better to fail loudly than silently do nothing
+            throw new UnsupportedOperationException("Double elimination schedule generation is not implemented yet");
         }
     }
 
@@ -122,7 +138,7 @@ public class TournamentService {
                 match.setRound(round);
                 match.setStatus(Match.MatchStatus.SCHEDULED);
                 matches.add(match);
-                
+
                 matchesInCurrentRound++;
                 if (matchesInCurrentRound >= matchesPerRound) {
                     round++;
@@ -138,7 +154,6 @@ public class TournamentService {
         List<Team> shuffledTeams = new ArrayList<>(teams);
         Collections.shuffle(shuffledTeams);
 
-        // Calculate the number of rounds needed
         int numTeams = shuffledTeams.size();
         int nextPowerOfTwo = 1;
         while (nextPowerOfTwo < numTeams) {
@@ -148,7 +163,7 @@ public class TournamentService {
         List<Match> matches = new ArrayList<>();
         int bracketPosition = 0;
 
-        // Create first round matches
+        // First round matches (actual teams)
         for (int i = 0; i < shuffledTeams.size(); i += 2) {
             if (i + 1 < shuffledTeams.size()) {
                 Match match = new Match();
@@ -162,10 +177,10 @@ public class TournamentService {
             }
         }
 
-        // Create placeholder matches for subsequent rounds
+        // Placeholder matches for later rounds (bracket structure)
         int totalRounds = (int) (Math.log(nextPowerOfTwo) / Math.log(2));
         int matchesInRound = matches.size();
-        
+
         for (int round = 2; round <= totalRounds; round++) {
             matchesInRound = matchesInRound / 2;
             for (int i = 0; i < matchesInRound; i++) {

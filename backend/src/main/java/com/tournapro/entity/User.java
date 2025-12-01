@@ -1,5 +1,6 @@
 package com.tournapro.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.List;
 
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "users")
 @Data
@@ -24,17 +26,22 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
-    @Column(nullable = false)
+
+    // Map the entity field to the existing DB column name `password_hash` so inserts/updates target the correct column
+    @Column(name = "password_hash", nullable = true)
     private String password;
 
-    @Column(unique = true, nullable = false)
+    // Make email nullable so ALTER TABLE succeeds if existing rows have nulls
+    @Column(unique = true, nullable = true)
     private String email;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
 
-    private boolean enabled = true;
+    // Use wrapper Boolean (nullable) so Hibernate creates a nullable column instead of NOT NULL for primitive
+    @Column(nullable = true)
+    private Boolean enabled = true;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -58,7 +65,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return enabled;
+        return Boolean.TRUE.equals(enabled);
     }
 
     public enum Role {
