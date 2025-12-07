@@ -99,6 +99,7 @@
     </dependencies>
 
     <build>
+        <!-- Use default source directory (src/main/java); removed custom sourceDirectory so IDE and Maven compile normally -->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -110,6 +111,16 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <!-- Ensure tests run with class data sharing disabled to avoid the OpenJDK warning -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <!-- let Maven resolve the plugin version -->
+                <configuration>
+                    <!-- Disable JVM class data sharing which causes the warning when the bootstrap classpath is appended -->
+                    <argLine>-Xshare:off</argLine>
                 </configuration>
             </plugin>
         </plugins>

@@ -4,6 +4,7 @@ import com.tournapro.dto.AuthResponse;
 import com.tournapro.dto.LoginRequest;
 import com.tournapro.dto.RegisterRequest;
 import com.tournapro.entity.User;
+import com.tournapro.exception.EmailAlreadyUsedException;
 import com.tournapro.repository.UserRepository;
 import com.tournapro.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -24,35 +25,39 @@ public class AuthService {
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+        if (!request.getPassword().equals(request.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
         }
+
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailAlreadyUsedException("Email already in use");
         }
 
         User user = new User();
-        user.setUsername(request.getUsername());
+        // username left null (optional display field)
+        user.setUsername(null);
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setEmail(request.getEmail());
-        user.setRole(request.getRole());
+        user.setFullName(request.getFullName());
+        user.setRole(User.Role.ORGANIZER); // default role
         user.setEnabled(true);
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        return new AuthResponse(token, user.getUsername(), user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new AuthResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole(), token);
     }
 
     public AuthResponse login(LoginRequest request) {
+        // authenticate using email as principal
         authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
 
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid email or password"));
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        return new AuthResponse(token, user.getUsername(), user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(user.getEmail());
+        return new AuthResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole(), token);
     }
 }

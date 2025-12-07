@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+// Use relative URL to leverage Vite proxy (configured in vite.config.js)
+// The proxy forwards /api/* requests to http://localhost:8080
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,16 +11,38 @@ const api = axios.create({
   },
 });
 
-// Add token to requests
+// List of public endpoints that don't require authentication
+const PUBLIC_ENDPOINTS = ['/auth/login', '/auth/register', '/public'];
+
+// Add token to requests (except public endpoints)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const isPublicEndpoint = PUBLIC_ENDPOINTS.some(endpoint => 
+      config.url?.includes(endpoint)
+    );
+    
+    if (!isPublicEndpoint) {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
+    
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Auth API
@@ -35,6 +59,7 @@ export const tournamentAPI = {
   create: (data) => api.post('/tournaments', data),
   update: (id, data) => api.put(`/tournaments/${id}`, data),
   delete: (id) => api.delete(`/tournaments/${id}`),
+  copy: (id, includeTeams = false) => api.post(`/tournaments/${id}/copy?includeTeams=${includeTeams}`),
   generateSchedule: (tournamentId, divisionId) => 
     api.post(`/tournaments/${tournamentId}/divisions/${divisionId}/generate-schedule`),
 };
@@ -44,7 +69,7 @@ export const teamAPI = {
   getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/teams`),
   getById: (tournamentId, id) => api.get(`/tournaments/${tournamentId}/teams/${id}`),
   create: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/teams`, data),
-  update: (tournamentId, id, data) => api.put(`/tournaments/${tournamentId}/teams/${id}`, data),
+  update: (tournamentId, id, data) => api.patch(`/tournaments/${tournamentId}/teams/${id}`, data),
   delete: (tournamentId, id) => api.delete(`/tournaments/${tournamentId}/teams/${id}`),
 };
 
@@ -70,16 +95,36 @@ export const matchAPI = {
 
 // Player API
 export const playerAPI = {
-  getByTeam: (teamId) => api.get(`/teams/${teamId}/players`),
+  // New endpoints matching PlayerController
+  getByTeam: (tournamentId, teamId) => api.get(`/tournaments/${tournamentId}/teams/${teamId}/players`),
+  create: (tournamentId, teamId, data) => api.post(`/tournaments/${tournamentId}/teams/${teamId}/players`, data),
+  bulkCreate: (tournamentId, teamId, players) => api.post(`/tournaments/${tournamentId}/teams/${teamId}/players/bulk`, players),
+  
+  // Legacy endpoints (keep for backwards compatibility if needed)
   getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/players`),
   getById: (id) => api.get(`/players/${id}`),
-  create: (teamId, data) => api.post(`/teams/${teamId}/players`, data),
   update: (id, data) => api.put(`/players/${id}`, data),
   delete: (id) => api.delete(`/players/${id}`),
   getTopScorers: (tournamentId, limit = 10) => 
     api.get(`/tournaments/${tournamentId}/top-scorers?limit=${limit}`),
   updateStats: (id, stats) => 
     api.patch(`/players/${id}/stats`, null, { params: stats }),
+};
+
+// Referee API
+export const refereeAPI = {
+  getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/referees`),
+  create: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/referees`, data),
+  bulkCreate: (tournamentId, referees) => api.post(`/tournaments/${tournamentId}/referees/bulk`, referees),
+  update: (tournamentId, id, data) => api.patch(`/tournaments/${tournamentId}/referees/${id}`, data),
+  delete: (tournamentId, id) => api.delete(`/tournaments/${tournamentId}/referees/${id}`),
+};
+
+// Administrator API
+export const administratorAPI = {
+  getByTournament: (tournamentId) => api.get(`/tournaments/${tournamentId}/administrators`),
+  create: (tournamentId, data) => api.post(`/tournaments/${tournamentId}/administrators`, data),
+  delete: (tournamentId, id) => api.delete(`/tournaments/${tournamentId}/administrators/${id}`),
 };
 
 // Public API

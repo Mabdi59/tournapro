@@ -23,17 +23,21 @@ public class User implements UserDetails {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(unique = true, nullable = false)
+    // keep username for display but make it nullable to allow email-based login
+    @Column(unique = true, nullable = true)
     private String username;
-
 
     // Map the entity field to the existing DB column name `password_hash` so inserts/updates target the correct column
     @Column(name = "password_hash", nullable = true)
     private String password;
 
-    // Make email nullable so ALTER TABLE succeeds if existing rows have nulls
-    @Column(unique = true, nullable = true)
+    // Make email unique and not null for new users
+    @Column(unique = true, nullable = false)
     private String email;
+
+    // Optional full name
+    @Column(nullable = true)
+    private String fullName;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -66,6 +70,14 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return Boolean.TRUE.equals(enabled);
+    }
+
+    // Override the UserDetails#getUsername to return the email address so the JWT (which uses email as subject)
+    // and UserDetails are consistent. This fixes token validation where jwt subject (email) was compared
+    // to a nullable `username` display field.
+    @Override
+    public String getUsername() {
+        return this.email;
     }
 
     public enum Role {

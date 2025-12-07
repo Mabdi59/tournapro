@@ -1,85 +1,81 @@
 package com.tournapro.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
-@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @Entity
 @Table(name = "tournaments")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class Tournament {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
-
-    @Column(length = 1000)
-    private String description;
-
-    @Column(nullable = false)
-    private LocalDateTime startDate;
-
-    private LocalDateTime endDate;
-
-    @Column(nullable = false)
-    private String location;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private TournamentStatus status;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    private TournamentFormat format;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "organizer_id", nullable = false)
-    private User organizer;
+    @JoinColumn(name = "owner_id", nullable = false)
+    private User owner;
 
-    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Division> divisions = new ArrayList<>();
+    @Column(nullable = false, length = 255)
+    private String title;
 
-    @OneToMany(mappedBy = "tournament", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonIgnore
-    private List<Team> teams = new ArrayList<>();
+    @Column(name = "primary_venue", length = 255)
+    private String primaryVenue;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "start_date")
+    private LocalDate startDate;
 
-    private LocalDateTime updatedAt;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt = LocalDateTime.now();
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        if (status == null) {
-            status = TournamentStatus.UPCOMING;
-        }
+    // --- getters & setters ---
+
+    public Long getId() {
+        return id;
     }
 
-    @PreUpdate
-    protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public enum TournamentStatus {
-        UPCOMING, IN_PROGRESS, COMPLETED, CANCELLED
+    public User getOwner() {
+        return owner;
     }
 
-    public enum TournamentFormat {
-        ROUND_ROBIN, SINGLE_ELIMINATION, DOUBLE_ELIMINATION
+    public void setOwner(User owner) {
+        this.owner = owner;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getPrimaryVenue() {
+        return primaryVenue;
+    }
+
+    public void setPrimaryVenue(String primaryVenue) {
+        this.primaryVenue = primaryVenue;
+    }
+
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
+

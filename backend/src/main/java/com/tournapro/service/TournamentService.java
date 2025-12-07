@@ -1,198 +1,113 @@
 package com.tournapro.service;
 
-import com.tournapro.dto.TournamentRequest;
-import com.tournapro.entity.Division;
-import com.tournapro.entity.Match;
-import com.tournapro.entity.Team;
+import com.tournapro.dto.CreateTournamentRequest;
+import com.tournapro.dto.TournamentResponse;
 import com.tournapro.entity.Tournament;
 import com.tournapro.entity.User;
-import com.tournapro.repository.DivisionRepository;
-import com.tournapro.repository.MatchRepository;
-import com.tournapro.repository.TeamRepository;
 import com.tournapro.repository.TournamentRepository;
 import com.tournapro.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 public class TournamentService {
 
     private final TournamentRepository tournamentRepository;
     private final UserRepository userRepository;
-    private final DivisionRepository divisionRepository;
-    private final TeamRepository teamRepository;
-    private final MatchRepository matchRepository;
+
+    public TournamentService(TournamentRepository tournamentRepository,
+                             UserRepository userRepository) {
+        this.tournamentRepository = tournamentRepository;
+        this.userRepository = userRepository;
+    }
 
     private User getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName(); // assuming username = email
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("User not found: " + email));
     }
 
+    // CREATE
     @Transactional
-    public Tournament createTournament(TournamentRequest request) {
-        User organizer = getCurrentUser();
+    public TournamentResponse createTournament(CreateTournamentRequest request) {
+        User owner = getCurrentUser();
 
-        Tournament tournament = new Tournament();
-        tournament.setName(request.getName());
-        tournament.setDescription(request.getDescription());
-        tournament.setStartDate(request.getStartDate());
-        tournament.setEndDate(request.getEndDate());
-        tournament.setLocation(request.getLocation());
-        tournament.setFormat(request.getFormat());
-        tournament.setOrganizer(organizer);
-        tournament.setStatus(Tournament.TournamentStatus.UPCOMING);
+        Tournament t = new Tournament();
+        t.setOwner(owner);
+        t.setTitle(request.getTitle().trim());
+        t.setPrimaryVenue(request.getPrimaryVenue());
+        t.setStartDate(request.getStartDate());
 
-        return tournamentRepository.save(tournament);
+        Tournament saved = tournamentRepository.save(t);
+
+        return toResponse(saved);
     }
 
+    // LIST (for logged-in user)
     @Transactional(readOnly = true)
-    public List<Tournament> getAllTournaments() {
-        return tournamentRepository.findAll();
+    public List<TournamentResponse> getMyTournaments() {
+        User owner = getCurrentUser();
+        return tournamentRepository.findByOwnerOrderByCreatedAtDesc(owner)
+                .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
     }
 
+    // GET BY ID (no owner check yet – you can restrict this if you want)
     @Transactional(readOnly = true)
-    public Tournament getTournamentById(Long id) {
-        return tournamentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Tournament not found"));
+    public TournamentResponse getTournament(Long id) {
+        Tournament t = tournamentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tournament not found: " + id));
+        return toResponse(t);
     }
 
-    @Transactional(readOnly = true)
-    public List<Tournament> getMyTournaments() {
-        User organizer = getCurrentUser();
-        return tournamentRepository.findByOrganizer(organizer);
-    }
-
-    @Transactional
-    public Tournament updateTournament(Long id, TournamentRequest request) {
-        Tournament tournament = getTournamentById(id);
-
-        tournament.setName(request.getName());
-        tournament.setDescription(request.getDescription());
-        tournament.setStartDate(request.getStartDate());
-        tournament.setEndDate(request.getEndDate());
-        tournament.setLocation(request.getLocation());
-        tournament.setFormat(request.getFormat());
-
-        return tournamentRepository.save(tournament);
-    }
-
+    // DELETE – only if it belongs to current user
     @Transactional
     public void deleteTournament(Long id) {
-        Tournament tournament = getTournamentById(id); // ensures existence
-        tournamentRepository.delete(tournament);
+        User owner = getCurrentUser();
+
+        Tournament t = tournamentRepository.findByIdAndOwner(id, owner)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Tournament not found or not owned by current user: " + id)
+                );
+
+        tournamentRepository.delete(t);
     }
 
+    // COPY – simple copy of basic info, still owned by current user
+    // (Later you can extend this to copy teams, format, etc.)
     @Transactional
-    public void generateSchedule(Long tournamentId, Long divisionId) {
-        Tournament tournament = getTournamentById(tournamentId);
-        Division division = divisionRepository.findById(divisionId)
-                .orElseThrow(() -> new RuntimeException("Division not found"));
+    public TournamentResponse copyTournament(Long id) {
+        User owner = getCurrentUser();
 
-        // Safety: make sure this division belongs to this tournament
-        if (division.getTournament() == null ||
-                !division.getTournament().getId().equals(tournament.getId())) {
-            throw new RuntimeException("Division does not belong to this tournament");
-        }
+        Tournament original = tournamentRepository.findByIdAndOwner(id, owner)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Tournament not found or not owned by current user: " + id)
+                );
 
-        List<Team> teams = teamRepository.findByDivision(division);
+        Tournament copy = new Tournament();
+        copy.setOwner(owner);
+        copy.setTitle(original.getTitle());           // you could add " (copy)" if you want
+        copy.setPrimaryVenue(original.getPrimaryVenue());
+        copy.setStartDate(original.getStartDate());
 
-        if (teams.size() < 2) {
-            throw new RuntimeException("Need at least 2 teams to generate schedule");
-        }
-
-        // Clear existing matches for this division
-        List<Match> existingMatches = matchRepository.findByDivision(division);
-        matchRepository.deleteAll(existingMatches);
-
-        if (tournament.getFormat() == Tournament.TournamentFormat.ROUND_ROBIN) {
-            generateRoundRobinSchedule(division, teams);
-        } else if (tournament.getFormat() == Tournament.TournamentFormat.SINGLE_ELIMINATION) {
-            generateSingleEliminationSchedule(division, teams);
-        } else if (tournament.getFormat() == Tournament.TournamentFormat.DOUBLE_ELIMINATION) {
-            // Not implemented yet: better to fail loudly than silently do nothing
-            throw new UnsupportedOperationException("Double elimination schedule generation is not implemented yet");
-        }
+        Tournament savedCopy = tournamentRepository.save(copy);
+        return toResponse(savedCopy);
     }
 
-    private void generateRoundRobinSchedule(Division division, List<Team> teams) {
-        List<Match> matches = new ArrayList<>();
-        int round = 1;
-        int matchesPerRound = teams.size() / 2;
-        if (matchesPerRound == 0) matchesPerRound = 1;
-        int matchesInCurrentRound = 0;
-
-        for (int i = 0; i < teams.size(); i++) {
-            for (int j = i + 1; j < teams.size(); j++) {
-                Match match = new Match();
-                match.setDivision(division);
-                match.setTeam1(teams.get(i));
-                match.setTeam2(teams.get(j));
-                match.setRound(round);
-                match.setStatus(Match.MatchStatus.SCHEDULED);
-                matches.add(match);
-
-                matchesInCurrentRound++;
-                if (matchesInCurrentRound >= matchesPerRound) {
-                    round++;
-                    matchesInCurrentRound = 0;
-                }
-            }
-        }
-
-        matchRepository.saveAll(matches);
-    }
-
-    private void generateSingleEliminationSchedule(Division division, List<Team> teams) {
-        List<Team> shuffledTeams = new ArrayList<>(teams);
-        Collections.shuffle(shuffledTeams);
-
-        int numTeams = shuffledTeams.size();
-        int nextPowerOfTwo = 1;
-        while (nextPowerOfTwo < numTeams) {
-            nextPowerOfTwo *= 2;
-        }
-
-        List<Match> matches = new ArrayList<>();
-        int bracketPosition = 0;
-
-        // First round matches (actual teams)
-        for (int i = 0; i < shuffledTeams.size(); i += 2) {
-            if (i + 1 < shuffledTeams.size()) {
-                Match match = new Match();
-                match.setDivision(division);
-                match.setTeam1(shuffledTeams.get(i));
-                match.setTeam2(shuffledTeams.get(i + 1));
-                match.setRound(1);
-                match.setBracketPosition(bracketPosition++);
-                match.setStatus(Match.MatchStatus.SCHEDULED);
-                matches.add(match);
-            }
-        }
-
-        // Placeholder matches for later rounds (bracket structure)
-        int totalRounds = (int) (Math.log(nextPowerOfTwo) / Math.log(2));
-        int matchesInRound = matches.size();
-
-        for (int round = 2; round <= totalRounds; round++) {
-            matchesInRound = matchesInRound / 2;
-            for (int i = 0; i < matchesInRound; i++) {
-                Match match = new Match();
-                match.setDivision(division);
-                match.setRound(round);
-                match.setBracketPosition(bracketPosition++);
-                match.setStatus(Match.MatchStatus.SCHEDULED);
-                matches.add(match);
-            }
-        }
-
-        matchRepository.saveAll(matches);
+    private TournamentResponse toResponse(Tournament t) {
+        return new TournamentResponse(
+                t.getId(),
+                t.getTitle(),
+                t.getPrimaryVenue(),
+                t.getStartDate(),
+                t.getCreatedAt()
+        );
     }
 }

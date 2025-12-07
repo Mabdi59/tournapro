@@ -1,85 +1,103 @@
-.navbar {
-  background-color: #2c3e50;
+/* NAVBAR */
+.tp-navbar {
+  height: 64px;
+  background: #0b1e38;
   color: white;
-  padding: 15px 0;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
+  padding: 0 26px;
 }
 
-.nav-brand {
-  font-size: 24px;
-  font-weight: bold;
-  color: white;
-  text-decoration: none;
-}
-
-.nav-links {
+.tp-left {
   display: flex;
-  gap: 20px;
+  align-items: center;
+  gap: 12px;
+}
+
+.tp-back-btn {
+  border: none;
+  background: transparent;
+  color: white;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 999px;
+  transition: background 0.12s ease, transform 0.12s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tp-back-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateX(-1px);
+}
+
+.tp-logo-wrapper {
+  display: flex;
   align-items: center;
 }
 
-.nav-links a {
-  color: white;
-  text-decoration: none;
-  transition: opacity 0.3s;
+.tp-logo {
+  font-size: 22px;
+  margin-right: 6px;
 }
 
-.nav-links a:hover {
-  opacity: 0.8;
+.tp-title {
+  font-size: 20px;
+  font-weight: 600;
 }
 
-.nav-user {
-  color: #bdc3c7;
+.tp-right {
+  position: relative;
 }
 
-.btn-secondary {
-  background-color: #e74c3c;
-  color: white;
-  padding: 8px 16px;
+.tp-account-btn {
+  background: none;
   border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.3s;
-}
-
-.btn-secondary:hover {
-  background-color: #c0392b;
-}
-
-.footer {
-  background-color: #2c3e50;
   color: white;
-  text-align: center;
-  padding: 20px;
-  margin-top: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
 }
 
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+.tp-account-btn:hover {
+  opacity: 0.85;
 }
 
-.card {
+.tp-account-wrapper {
+  position: relative;
+}
+
+.tp-dropdown {
+  position: absolute;
+  top: 46px;
+  right: 0;
   background: white;
+  color: #111;
+  min-width: 180px;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 20px;
-  margin-bottom: 20px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  z-index: 50;
 }
 
-.card h3 {
-  margin-top: 0;
-  margin-bottom: 15px;
-  color: #333;
+.tp-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.tp-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.tp-logout {
+  color: #c0392b;
+}
+
+.tp-logout:hover {
+  background: #fdeaea;
 }

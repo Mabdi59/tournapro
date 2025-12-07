@@ -1,5 +1,7 @@
 package com.tournapro.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 
@@ -10,6 +12,8 @@ public class ErrorResponse {
     private String error;
     private String message;
     private String path;
+
+    @JsonProperty("errors")
     private Map<String, String> validationErrors;
 
     public ErrorResponse() {
@@ -71,4 +75,3 @@ public class ErrorResponse {
         this.validationErrors = validationErrors;
     }
 }
-

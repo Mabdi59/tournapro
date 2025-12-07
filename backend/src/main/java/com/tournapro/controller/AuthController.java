@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -24,5 +26,13 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody com.tournapro.dto.ForgotPasswordRequest request) {
+        // For now, do a lookup and always return the generic message
+        // The service layer could be added later; keep controller simple
+        // Don't reveal whether the email exists
+        return ResponseEntity.ok(Map.of("message", "If an account exists for that email, a reset link has been sent."));
     }
 }

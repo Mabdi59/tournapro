@@ -1,0 +1,133 @@
+.wizard-page {
+  min-height: calc(100vh - 64px); /* below navbar */
+  padding: 40px 24px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  background: #f4f7ff;
+}
+
+.wizard-card {
+  margin-top: 40px;
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 100%;
+  padding: 32px 40px 28px;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.16);
+}
+
+.wizard-tabs {
+  display: flex;
+  height: 4px;
+  margin: -32px -40px 24px;
+}
+
+.wizard-tab {
+  flex: 1;
+  background: #e5e7eb;
+}
+
+.wizard-tab.active {
+  background: #2563eb; /* blue highlight */
+}
+
+.wizard-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: #111827;
+}
+
+.wizard-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.wizard-label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  color: #4b5563;
+  margin-bottom: 16px;
+  gap: 8px;
+}
+
+.wizard-input {
+  height: 40px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.wizard-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.25);
+}
+
+.wizard-secondary-btn {
+  margin-top: 8px;
+  padding: 8px 14px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.wizard-secondary-btn:hover {
+  background: #f3f4f6;
+}
+
+.wizard-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.wizard-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+.wizard-text-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.wizard-text-btn:hover {
+  color: #374151;
+}
+
+.wizard-primary-btn {
+  min-width: 90px;
+  padding: 8px 18px;
+  border-radius: 4px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.wizard-primary-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.wizard-primary-btn:not(:disabled):hover {
+  background: #1d4ed8;
+}
