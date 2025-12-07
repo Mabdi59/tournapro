@@ -49,7 +49,11 @@ public class TournamentController {
 
     // POST /api/tournaments/{id}/copy  -> create a copy of this tournament
     @PostMapping("/{id}/copy")
-    public ResponseEntity<TournamentResponse> copyTournament(@PathVariable Long id) {
+    public ResponseEntity<TournamentResponse> copyTournament(
+            @PathVariable Long id,
+            @RequestParam(name = "includeTeams", defaultValue = "false") boolean includeTeams
+    ) {
+        // includeTeams is accepted but currently ignored by the service; use one-arg overload for compatibility
         TournamentResponse response = tournamentService.copyTournament(id);
         return ResponseEntity.ok(response);
     }

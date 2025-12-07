@@ -83,13 +83,16 @@ public class TournamentService {
     // COPY – simple copy of basic info, still owned by current user
     // (Later you can extend this to copy teams, format, etc.)
     @Transactional
-    public TournamentResponse copyTournament(Long id) {
+    public TournamentResponse copyTournament(Long id, boolean includeTeams) {
         User owner = getCurrentUser();
 
-        Tournament original = tournamentRepository.findByIdAndOwner(id, owner)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Tournament not found or not owned by current user: " + id)
-                );
+        Tournament original = tournamentRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Tournament not found: " + id));
+
+        // enforce ownership
+        if (!original.getOwner().getId().equals(owner.getId())) {
+            throw new IllegalStateException("You do not own this tournament.");
+        }
 
         Tournament copy = new Tournament();
         copy.setOwner(owner);
@@ -97,8 +100,16 @@ public class TournamentService {
         copy.setPrimaryVenue(original.getPrimaryVenue());
         copy.setStartDate(original.getStartDate());
 
+        // NOTE: includeTeams is ignored for now because teams are not implemented yet
+
         Tournament savedCopy = tournamentRepository.save(copy);
         return toResponse(savedCopy);
+    }
+
+    // Backwards-compatible overload used by older callers
+    @Transactional
+    public TournamentResponse copyTournament(Long id) {
+        return copyTournament(id, false);
     }
 
     private TournamentResponse toResponse(Tournament t) {

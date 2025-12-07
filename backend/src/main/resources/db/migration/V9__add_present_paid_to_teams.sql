@@ -1,0 +1,8 @@
+BEGIN;
+
+ALTER TABLE teams
+    ADD COLUMN IF NOT EXISTS present boolean NOT NULL DEFAULT false,
+    ADD COLUMN IF NOT EXISTS paid boolean NOT NULL DEFAULT false;
+
+COMMIT;
+

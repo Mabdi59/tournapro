@@ -81,7 +81,10 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         // Allow local dev origins. Use origin patterns so different dev ports are accepted.
         configuration.setAllowedOriginPatterns(Arrays.asList("http://localhost:*"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        // Include PATCH for partial updates and allow OPTIONS for preflight
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        // Expose Authorization header so frontend can read it if returned
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
 

@@ -196,6 +196,23 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         String message = ex.getMessage();
         HttpStatus status = HttpStatus.BAD_REQUEST;
 
+        // special-case: map the 'only registered users' service message to a field validation for email
+        if (message != null && message.contains("Only registered TournaPro users")) {
+            Map<String, String> errors = new HashMap<>();
+            errors.put("email", "User not found");
+
+            ErrorResponse body = new ErrorResponse(
+                    LocalDateTime.now(),
+                    HttpStatus.BAD_REQUEST.value(),
+                    "Bad Request",
+                    "Validation failed",
+                    request.getRequestURI()
+            );
+            body.setValidationErrors(errors);
+
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+        }
+
         if ("Invalid email or password".equals(message)) {
             status = HttpStatus.UNAUTHORIZED;
         }
